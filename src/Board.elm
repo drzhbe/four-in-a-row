@@ -1,28 +1,50 @@
-import Circle exposing (Model, init, update, view)
+module Board (Action, view) where
 
-import StartApp
-import Task
-import Html exposing (Html)
-import Effects exposing (Never)
-
-app : StartApp.App Model
-app =
-    StartApp.start
-        { init = init 0 100
-        , update = update
-        , view = view
-        , inputs = []
-        }
-
-main : Signal Html
-main =
-    app.html
-
-port tasks : Signal (Task.Task Never ())
-port tasks =
-    app.tasks
+import Types exposing (Board, Cell, Color)
+import Circle
 
 
+import Array
+import Svg exposing (Svg, svg, rect, g, text)
+import Svg.Attributes exposing (..)
+--import Svg.Events exposing (onClick)
 
+
+type alias Model =
+    { board : Board
+    , turn : Color
+    , gameFinished : Bool
+    --debug parameters
+    , horizontal : Int
+    , vertical : Int
+    , backSlash : Int
+    , slash : Int
+    }
+
+size : Int
+size = 100
+
+type Action
+    = Hack Circle.Action
+
+viewCell : Signal.Address Action -> Cell -> Svg
+viewCell address cell =
+    Circle.embedView
+        (Signal.forwardTo address Hack)
+        (fst (Circle.init cell.x cell.y cell.color))
+
+viewColumn : Signal.Address Action -> Array.Array Cell -> Svg
+viewColumn address column =
+    g
+        []
+        (Array.toList (Array.map (viewCell address) column))
+
+view : Signal.Address Action -> Model -> Svg
 view address model =
+    svg
+        [ width (toString (size * 7))
+        , height (toString (size * 6))
+        , viewBox ("0 0 " ++ (toString (size * 7)) ++ " " ++ (toString (size * 6)))
+        ]
+        (Array.toList (Array.map (viewColumn address) model.board))
      

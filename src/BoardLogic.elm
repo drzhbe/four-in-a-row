@@ -1,6 +1,6 @@
 module BoardLogic (createBoard, put, isFourInARow) where
 
-import Types exposing (Point, Color, Column, Board)
+import Types exposing (Point, Color, Cell, Column, Board)
 import Array
 
 boardWidth : Int
@@ -8,19 +8,29 @@ boardWidth = 7
 boardHeight : Int
 boardHeight = 6
 
+
+initCell : Color -> Int -> Int -> Cell
+initCell color x y =
+    { x = x * 100
+    , y = (boardHeight - y - 1) * 100 -- -1 because we start to draw from top corner
+    , color = color
+    }
+
 createBoard : Board
 createBoard =
-    Array.repeat 7 (Array.repeat 6 0)
+    Array.initialize 7 (\x -> Array.initialize 6 (initCell 0 x))
 
-find : Maybe Int -> Column -> Int
+find : Color -> Column -> Int
 find value array =
     findIterate 0 value array
 
-findIterate : Int -> Maybe Int -> Column -> Int
+findIterate : Int -> Color -> Column -> Int
 findIterate index value array =
-    if index == Array.length array then -1
-    else if (Array.get index array) == value then index
-    else findIterate (index + 1) value array
+    case Array.get index array of
+        Nothing -> -1
+        Just cell ->
+            if cell.color == value then index
+            else findIterate (index + 1) value array
 
 put : Int -> Color -> Board -> (Point, Board)
 put x color board =
@@ -28,20 +38,20 @@ put x color board =
         Nothing -> ( (-1, -1), board )
         Just column ->
             let
-                (y, newColumn) = putIntoColumn color column
+                (y, newColumn) = putIntoColumn color x column
             in
                 if newColumn == column
                 then ( (-1, -1), board )
                 else ( (x, y), Array.set x newColumn board )
 
 
-putIntoColumn : Color -> Column -> (Int, Column)
-putIntoColumn color column =
+putIntoColumn : Color -> Int -> Column -> (Int, Column)
+putIntoColumn color x column =
     let
-        index = find (Just 0) column
+        index = find 0 column
     in
         if index == -1 then ( -1, column )
-        else ( index, Array.set index color column )
+        else ( index, Array.set index (initCell color x index) column )
 
 isFourInARow : Point -> Color -> Board -> (Bool, Int, Int, Int, Int)
 isFourInARow point color board =
@@ -121,8 +131,8 @@ check getNextPoint point color board sum =
         Just column ->
             case Array.get (snd point) column of
                 Nothing -> sum
-                Just neighborColor ->
-                    if neighborColor == color
+                Just neighborCell ->
+                    if neighborCell.color == color
                     then sum + (check getNextPoint (getNextPoint point) color board sum)
                     else sum
 

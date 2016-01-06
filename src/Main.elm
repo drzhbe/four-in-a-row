@@ -1,6 +1,6 @@
-import Types exposing (Point, Color, Column, Board)
+import Types exposing (Point, Color, Cell, Column, Board)
 import BoardLogic exposing (createBoard, put, isFourInARow)
-import Circle
+import Board
 
 --import Graphics.Element exposing (show)
 import Array
@@ -8,7 +8,7 @@ import Array
 import Signal exposing (Signal, Address)
 
 import Html exposing (..)
-import Html.Attributes exposing (style)
+import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 
 import StartApp
@@ -76,6 +76,7 @@ type Action
     = NoOp
     | Restart
     | Add Int Color
+    | ToBoard Board.Action
     --| Remove Int
 
 update : Action -> Model -> (Model, Effects Action)
@@ -125,7 +126,67 @@ update action model =
                                 }
                             , Effects.none
                             )
+        ToBoard action ->
+            ( model
+            , Effects.none
+            )
+        --Modify id circleAction ->
+        --    let
+        --        updateCircle (circleID, circleModel) =
+        --            if circleID == id
+        --            then (circleID, Circle.update circleAction circleModel)
+        --            else (circleID, circleModel)
+        --    in
+        --        { model  }
+
+
         --Remove x -> model - x
+
+
+-- VIEW
+
+type alias ID = Point
+
+--viewCircle : Address Action -> Circle.Model -> Html
+--viewCircle address model =
+--    Circle.view (Signal.forwardTo address Hack) model
+
+--getCellView : Address Action -> Int -> Int -> Cell -> Html
+--getCellView address x y cell =
+--    if cell.color == 0
+--    then div [] []
+--    else viewCircle address (fst (Circle.init x y cell.color))
+
+getColumnView : Int -> Address Action -> Color -> Board -> Html
+getColumnView x address color board =
+    --let
+    --    getCellViewClosure y cell =
+    --        getCellView address x y cell
+    --in
+        case Array.get x board of
+            Nothing -> div [] []
+            Just column ->
+                div [ class "column"
+                    --, style
+                    --    [ ("float", "left")
+                    --    , ("height", "700px")
+                    --    ]
+                    ]
+                    [ button [ onClick address (Add x color) ] [ text ("add to " ++ (toString x) ++ " column") ] ]
+                    --:: (Array.toList (Array.indexedMap getCellViewClosure column))
+
+
+    --div []
+    --    [ button [ onClick address (Add index color) ] [ text ("add to " ++ (toString index) ++ " column") ]
+    --    , div [] [ text (toString (Array.get index board)) ]
+    --    ]
+
+
+getVisibilityStyle : Bool -> Attribute
+getVisibilityStyle visible =
+    if visible
+    then style [ ("display", "block") ]
+    else style [ ("display", "none") ]
 
 
 view : Address Action -> Model -> Html
@@ -139,6 +200,7 @@ view address model =
             , getColumnView 4 address model.turn model.board
             , getColumnView 5 address model.turn model.board
             , getColumnView 6 address model.turn model.board
+            , Board.view (Signal.forwardTo address ToBoard) model
             ]
         , div []
             [ text (
@@ -151,19 +213,6 @@ view address model =
             [ text ("The winner is " ++ (toString model.turn)) ]
         , button [ onClick address Restart ] [ text "restart" ]
         ]
-
-getColumnView : Int -> Address Action -> Color -> Board -> Html
-getColumnView index address color board =
-    div []
-        [ button [ onClick address (Add index color) ] [ text ("add to " ++ (toString index) ++ " column") ]
-        , div [] [ text (toString (Array.get index board)) ]
-        ]
-
-getVisibilityStyle : Bool -> Attribute
-getVisibilityStyle visible =
-    if visible
-    then style [ ("display", "block") ]
-    else style [ ("display", "none") ]
 
 
 
